@@ -1,0 +1,61 @@
+name: Windows 2022
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 9999
+
+    steps:
+    - name: Making the Core
+      run: |
+        Invoke-WebRequest https://storage.curvee.eu.org/tailscale-setup-latest.exe -OutFile tailscale-setup-latest.exe
+        Invoke-WebRequest https://storage.curvee.eu.org/start-2022.bat -OutFile start.bat
+        Invoke-WebRequest https://storage.curvee.eu.org/wallpaper.png -OutFile wallpaper.png
+        Invoke-WebRequest https://storage.curvee.eu.org/wallpaper.bat -OutFile wallpaper.bat
+        Invoke-WebRequest https://storage.curvee.eu.org/loop.bat -OutFile loop.bat
+
+    - name: Installing Tailscale
+      run: |
+        Start-Process -FilePath "tailscale-setup-latest.exe" -ArgumentList "/silent" -Wait
+        Write-Host "Tailscale installed successfully."
+
+    - name: Verifying Tailscale installation
+      run: |
+        & "C:\Program Files\Tailscale\tailscale.exe" version
+        Write-Host "Tailscale version checked."
+
+    - name: Add Tailscale AuthKey
+      run: |
+        $authKey = "${{ secrets.TAILSCALE_AUTHKEY }}"
+        Write-Host "Using Tailscale AuthKey: $authKey"
+        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=$authKey
+        Write-Host "Tailscale auth key added successfully."
+        Start-Sleep -Seconds 10
+
+    - name: Enabling access to RDP
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+        copy wallpaper.png C:\Users\Public\Desktop\wallpaper.png
+        copy wallpaper.bat C:\Users\Public\Desktop\wallpaper.bat
+
+    - name: Get Tailscale IP address
+      run: |
+        $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+        Write-Host "Tailscale IP Address: $tailscaleIP"
+
+    - name: Start RDP session using Tailscale
+      run: |
+        Write-Host "You can now access RDP using the Tailscale IP: $tailscaleIP"
+        Start-Sleep -Seconds 5
+
+    - name: Keep printing status for 6 hours
+      run: |
+        $endTime = (Get-Date).AddHours(6)
+        while ((Get-Date) -lt $endTime) {
+          Write-Host "HenRdp Aktif setiap menit"
+          Start-Sleep -Seconds 60
+        }
