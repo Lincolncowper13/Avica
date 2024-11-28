@@ -1,27 +1,25 @@
-name: Windows 2022
+name: HenRDP
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: windows-2022
-    timeout-minutes: 9999
+    runs-on: windows-latest
 
     steps:
-    - name: Making the Core
-      run: |
-        Invoke-WebRequest https://storage.curvee.eu.org/tailscale-setup-latest.exe -OutFile tailscale-setup-latest.exe
-        Invoke-WebRequest https://storage.curvee.eu.org/start-2022.bat -OutFile start.bat
-        Invoke-WebRequest https://storage.curvee.eu.org/wallpaper.png -OutFile wallpaper.png
-        Invoke-WebRequest https://storage.curvee.eu.org/wallpaper.bat -OutFile wallpaper.bat
-        Invoke-WebRequest https://storage.curvee.eu.org/loop.bat -OutFile loop.bat
+    - name: Check out repository
+      uses: actions/checkout@v2
 
-    - name: Installing Tailscale
+    - name: Download and install Tailscale
       run: |
+        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup-latest.exe"
         Start-Process -FilePath "tailscale-setup-latest.exe" -ArgumentList "/silent" -Wait
         Write-Host "Tailscale installed successfully."
 
-    - name: Verifying Tailscale installation
+    - name: Verify Tailscale installation
       run: |
         & "C:\Program Files\Tailscale\tailscale.exe" version
         Write-Host "Tailscale version checked."
@@ -34,22 +32,28 @@ jobs:
         Write-Host "Tailscale auth key added successfully."
         Start-Sleep -Seconds 10
 
-    - name: Enabling access to RDP
+    - name: Enable Remote Desktop
       run: |
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
-        copy wallpaper.png C:\Users\Public\Desktop\wallpaper.png
-        copy wallpaper.bat C:\Users\Public\Desktop\wallpaper.bat
+        # Mengaktifkan Remote Desktop
+        $regKey = "HKLM:\System\CurrentControlSet\Control\Terminal Server"
+        Set-ItemProperty -Path $regKey -Name "fDenyTSConnections" -Value 0
+
+        # Dapatkan IP Tailscale yang aktif
+        $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+        Write-Host "Active Tailscale IP: $tailscaleIP"
+
+        # Membuka port RDP (3389) di Windows Firewall untuk IP Tailscale aktif
+        New-NetFirewallRule -Name "Allow Tailscale RDP" -DisplayName "Allow RDP for Active Tailscale IP" -Enabled True -Protocol TCP -Action Allow -LocalPort 3389 -RemoteAddress $tailscaleIP
+        Write-Host "RDP enabled and port 3389 opened in Windows Firewall for Tailscale IP: $tailscaleIP."
 
     - name: Get Tailscale IP address
       run: |
         $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
         Write-Host "Tailscale IP Address: $tailscaleIP"
 
-    - name: Start RDP session using Tailscale
+    - name: Start RDP session
       run: |
-        Write-Host "You can now access RDP using the Tailscale IP: $tailscaleIP"
+        Write-Host "Access RDP using the Tailscale IP and login with username 'Administrator' and password 'HenCoders2024'"
         Start-Sleep -Seconds 5
 
     - name: Keep printing status for 6 hours
