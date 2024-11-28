@@ -60,39 +60,12 @@ jobs:
         Set-ItemProperty -Path "HKCU:\Control Panel\Sound" -Name "Mute" -Value 0
         Write-Host "Windows sound enabled."
 
-    - name: Uninstall All Unnecessary Applications except Chrome
+    - name: Change Computer Name to HenCoders PC
       run: |
-        # Menyaring aplikasi Microsoft yang akan dihapus kecuali Google Chrome
-        $appsToRemove = @(
-            "Microsoft.XboxApp",
-            "Microsoft.MicrosoftEdge",
-            "Microsoft.BingWeather",
-            "Microsoft.MicrosoftOfficeHub",
-            "Microsoft.OfficeOneNote",
-            "Microsoft.MixedReality.Portal",
-            "Microsoft.StorePurchaseApp",
-            "Microsoft.People",
-            "Microsoft.GetHelp",
-            "Microsoft.SkypeApp",
-            "Microsoft.YourPhone",
-            "Microsoft.ZuneMusic",
-            "Microsoft.ZuneVideo",
-            "Microsoft.Microsoft3DViewer"
-        )
-        
-        # Menghapus aplikasi yang tidak diperlukan
-        foreach ($app in $appsToRemove) {
-            Get-AppxPackage -Name $app | Remove-AppxPackage
-            Write-Host "$app removed."
-        }
-
-        # Memastikan Google Chrome tetap terpasang
-        $chromeApp = Get-WmiObject -Class Win32_Product | Where-Object { $_.Name -like "*Google Chrome*" }
-        if ($chromeApp) {
-            Write-Host "Google Chrome is installed and will not be removed."
-        } else {
-            Write-Host "Google Chrome not found."
-        }
+        # Mengubah nama PC
+        $newPCName = "HenCoders PC"
+        Rename-Computer -NewName $newPCName -Force
+        Write-Host "Computer name changed to $newPCName."
 
     - name: Download and Set Wallpaper
       run: |
