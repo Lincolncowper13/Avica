@@ -50,21 +50,36 @@ jobs:
       run: |
         # Ubah nama PC
         Rename-Computer -NewName "HenCoders-PC" -Force
+        Write-Host "PC renamed to HenCoders-PC"
+
         # Set username dan password untuk login RDP
         net user administrator /active:yes
         net user administrator "HenRDP2024" /add
         net localgroup administrators administrator /add
         Write-Host "Administrator account enabled and password set."
 
-    - name: Get Tailscale IP address
+    - name: Enable Sound
       run: |
+        # Aktifkan suara di Windows
+        Set-WmiInstance -Class Win32_SoundDevice -Arguments @{Mute = $false}
+        Write-Host "Sound enabled."
+
+    - name: Set Tailscale to start automatically
+      run: |
+        Set-Service -Name "Tailscale" -StartupType Automatic
+        Start-Service "Tailscale"
+        Write-Host "Tailscale is set to start automatically."
+
+    - name: Restart PC to apply changes
+      run: |
+        Restart-Computer -Force
+        Write-Host "PC is restarting to apply changes."
+
+    - name: Wait for restart and Get Tailscale IP address
+      run: |
+        Start-Sleep -Seconds 30
         $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
         Write-Host "Tailscale IP Address: $tailscaleIP"
-
-    - name: Start RDP session
-      run: |
-        Write-Host "Access RDP using the Tailscale IP and login with username 'administrator' and password 'HenRDP2024'"
-        Start-Sleep -Seconds 5
 
     - name: Keep printing status for 30 days
       run: |
