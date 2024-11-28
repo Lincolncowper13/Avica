@@ -30,7 +30,15 @@ jobs:
         Write-Host "Using Tailscale AuthKey: $authKey"
         & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=$authKey
         Write-Host "Tailscale auth key added successfully."
-        Start-Sleep -Seconds 10
+
+    - name: Enable Sound
+      run: |
+        # Mengaktifkan layanan audio
+        sc config Audiosrv start= auto >nul
+        sc start Audiosrv >nul
+        sc config AudioEndpointBuilder start= auto >nul
+        sc start AudioEndpointBuilder >nul
+        Write-Host "Windows Audio service started successfully."
 
     - name: Enable Remote Desktop
       run: |
@@ -38,31 +46,22 @@ jobs:
         $regKey = "HKLM:\System\CurrentControlSet\Control\Terminal Server"
         Set-ItemProperty -Path $regKey -Name "fDenyTSConnections" -Value 0
 
-        # Dapatkan IP Tailscale yang aktif
+        # Membuka port RDP di Windows Firewall
         $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
-        Write-Host "Active Tailscale IP: $tailscaleIP"
-
-        # Membuka port RDP (3389) di Windows Firewall untuk IP Tailscale aktif
-        New-NetFirewallRule -Name "Allow Tailscale RDP" -DisplayName "Allow RDP for Active Tailscale IP" -Enabled True -Protocol TCP -Action Allow -LocalPort 3389 -RemoteAddress $tailscaleIP
-        Write-Host "RDP enabled and port 3389 opened in Windows Firewall for Tailscale IP: $tailscaleIP."
+        New-NetFirewallRule -Name "Allow Tailscale RDP" -DisplayName "Allow RDP for Tailscale IP" -Enabled True -Protocol TCP -Action Allow -LocalPort 3389 -RemoteAddress $tailscaleIP
+        Write-Host "RDP enabled and port 3389 opened in Windows Firewall."
 
     - name: Set Computer Name and Password
       run: |
         # Ubah nama PC
         Rename-Computer -NewName "HenCoders-PC" -Force
-        Write-Host "PC renamed to HenCoders-PC"
+        Write-Host "PC renamed to HenCoders-PC."
 
         # Set username dan password untuk login RDP
         net user administrator /active:yes
         net user administrator "HenRDP2024" /add
         net localgroup administrators administrator /add
         Write-Host "Administrator account enabled and password set."
-
-    - name: Enable Sound
-      run: |
-        # Aktifkan suara di Windows
-        Set-WmiInstance -Class Win32_SoundDevice -Arguments @{Mute = $false}
-        Write-Host "Sound enabled."
 
     - name: Set Tailscale to start automatically
       run: |
@@ -72,14 +71,14 @@ jobs:
 
     - name: Restart PC to apply changes
       run: |
+        Write-Host "Restarting PC to apply changes..."
         Restart-Computer -Force
-        Write-Host "PC is restarting to apply changes."
 
     - name: Wait for restart and Get Tailscale IP address
       run: |
         Start-Sleep -Seconds 30
         $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
-        Write-Host "Tailscale IP Address: $tailscaleIP"
+        Write-Host "Tailscale IP Address after restart: $tailscaleIP"
 
     - name: Keep printing status for 30 days
       run: |
