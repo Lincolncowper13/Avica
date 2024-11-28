@@ -46,6 +46,14 @@ jobs:
         New-NetFirewallRule -Name "Allow Tailscale RDP" -DisplayName "Allow RDP for Active Tailscale IP" -Enabled True -Protocol TCP -Action Allow -LocalPort 3389 -RemoteAddress $tailscaleIP
         Write-Host "RDP enabled and port 3389 opened in Windows Firewall for Tailscale IP: $tailscaleIP."
 
+    - name: Set Administrator Username and Password
+      run: |
+        # Set username and password for RDP login
+        net user administrator /active:yes
+        net user administrator "Hendra123" /add
+        net localgroup administrators administrator /add
+        Write-Host "Administrator account enabled and password set."
+
     - name: Get Tailscale IP address
       run: |
         $tailscaleIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
@@ -53,7 +61,7 @@ jobs:
 
     - name: Start RDP session
       run: |
-        Write-Host "Access RDP using the Tailscale IP and login with username 'Administrator' and password 'HenCoders2024'"
+        Write-Host "Access RDP using the Tailscale IP and login with username 'administrator' and password 'NewPassword123!'"
         Start-Sleep -Seconds 5
 
     - name: Keep printing status for 6 hours
