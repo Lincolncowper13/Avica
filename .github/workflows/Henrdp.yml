@@ -46,44 +46,15 @@ jobs:
         New-NetFirewallRule -Name "Allow Tailscale RDP" -DisplayName "Allow RDP for Active Tailscale IP" -Enabled True -Protocol TCP -Action Allow -LocalPort 3389 -RemoteAddress $tailscaleIP
         Write-Host "RDP enabled and port 3389 opened in Windows Firewall for Tailscale IP: $tailscaleIP."
 
-    - name: Set Administrator Username and Password
+    - name: Set Computer Name and Password
       run: |
-        # Set username and password for RDP login
+        # Ubah nama PC
+        Rename-Computer -NewName "HenCoders-PC" -Force
+        # Set username dan password untuk login RDP
         net user administrator /active:yes
         net user administrator "HenRDP2024" /add
         net localgroup administrators administrator /add
         Write-Host "Administrator account enabled and password set."
-
-    - name: Enable Sound (Auto On)
-      run: |
-        # Mengaktifkan suara pada Windows
-        Set-ItemProperty -Path "HKCU:\Control Panel\Sound" -Name "Mute" -Value 0
-        Write-Host "Windows sound enabled."
-
-    - name: Change Computer Name to HenCoders PC
-      run: |
-        # Mengubah nama PC
-        $newPCName = "HenCoders PC"
-        Rename-Computer -NewName $newPCName -Force
-        Write-Host "Computer name changed to $newPCName."
-
-    - name: Download and Set Wallpaper
-      run: |
-        # Download the wallpaper image
-        Invoke-WebRequest -Uri "https://i.ibb.co/jTrfy3D/20241128-215722.png" -OutFile "C:\Users\Public\Desktop\wallpaper.png"
-        
-        # Set the downloaded image as wallpaper
-        $wallpaperPath = "C:\Users\Public\Desktop\wallpaper.png"
-        Add-Type -TypeDefinition @"
-        using System;
-        using System.Runtime.InteropServices;
-        public class Wallpaper {
-            [DllImport("user32.dll", CharSet = CharSet.Auto)]
-            public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
-        }
-        "@
-        [Wallpaper]::SystemParametersInfo(20, 0, $wallpaperPath, 0x01 | 0x02)
-        Write-Host "Wallpaper changed successfully."
 
     - name: Get Tailscale IP address
       run: |
@@ -97,7 +68,7 @@ jobs:
 
     - name: Keep printing status for 30 days
       run: |
-        $endTime = (Get-Date).AddDays(30)  # Mengubah waktu ke 30 hari
+        $endTime = (Get-Date).AddDays(30)
         while ((Get-Date) -lt $endTime) {
           Write-Host "HenRdp Aktif setiap menit"
           Start-Sleep -Seconds 60
